@@ -31,15 +31,106 @@ const genAI = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY
 });
 
+// Function to remove existing terms/conditions elements to avoid duplicates with Clickthrough SDK
+function removeExistingTermsElements(html) {
+  console.log('Scanning for existing terms/conditions elements to remove...');
+  
+  // Patterns to detect and remove existing terms/conditions elements
+  const termsPatterns = [
+    // Checkboxes with terms-related text
+    /<input[^>]*type\s*=\s*["']checkbox["'][^>]*[^>]*>\s*[^<]*(?:terms|condition|agree|policy|privacy)[^<]*<\/?\w*>/gi,
+    /<label[^>]*>[^<]*<input[^>]*type\s*=\s*["']checkbox["'][^>]*>\s*[^<]*(?:terms|condition|agree|policy|privacy)[^<]*<\/label>/gi,
+    
+    // Divs or paragraphs containing checkbox + terms text
+    /<div[^>]*>[^<]*<input[^>]*type\s*=\s*["']checkbox["'][^>]*>[^<]*(?:terms|condition|agree|policy|privacy)[^<]*<\/div>/gi,
+    /<p[^>]*>[^<]*<input[^>]*type\s*=\s*["']checkbox["'][^>]*>[^<]*(?:terms|condition|agree|policy|privacy)[^<]*<\/p>/gi,
+    
+    // Text containing "I agree to" or similar
+    /<[^>]*>[^<]*(?:I\s+agree\s+to|By\s+clicking|Accept\s+terms|Terms\s+and\s+conditions|Privacy\s+policy)[^<]*<\/[^>]*>/gi,
+    
+    // Links to terms/privacy within form contexts
+    /<a[^>]*href[^>]*(?:terms|privacy|condition)[^>]*>[^<]*(?:terms|privacy|condition)[^<]*<\/a>/gi,
+    
+    // Standalone checkboxes near submit buttons (likely terms acceptance)
+    /<input[^>]*type\s*=\s*["']checkbox["'][^>]*>\s*(?=.*(?:submit|sign.up|register))/gi
+  ];
+  
+  let removedCount = 0;
+  
+  // Remove each pattern found
+  termsPatterns.forEach((pattern, index) => {
+    const matches = html.match(pattern);
+    if (matches) {
+      console.log(`Found ${matches.length} existing terms elements (pattern ${index + 1}):`, matches);
+      html = html.replace(pattern, '<!-- Existing terms element removed - replaced by SpotDraft Clickthrough -->');
+      removedCount += matches.length;
+    }
+  });
+  
+  // Additional cleanup: Remove empty labels, divs, or paragraphs that might be left behind
+  html = html.replace(/<(label|div|p)[^>]*>\s*<!--[^>]*-->\s*<\/\1>/gi, '');
+  html = html.replace(/<!--[^>]*-->\s*<!--[^>]*-->/gi, '<!-- Multiple terms elements removed -->');
+  
+  console.log(`Removed ${removedCount} existing terms/conditions elements`);
+  
+  return html;
+}
+
+// Function to remove image references and replace with styled elements
+function removeImageReferences(html) {
+  console.log('Scanning for image references to remove...');
+  
+  let removedCount = 0;
+  
+  // Remove all <img> tags and replace with styled placeholders
+  html = html.replace(/<img[^>]*>/gi, (match) => {
+    removedCount++;
+    
+    // Extract alt text if available for replacement text
+    const altMatch = match.match(/alt\s*=\s*["']([^"']*)["']/i);
+    const altText = altMatch ? altMatch[1] : 'Image';
+    
+    // Extract any classes for styling context
+    const classMatch = match.match(/class\s*=\s*["']([^"']*)["']/i);
+    const classes = classMatch ? classMatch[1] : '';
+    
+    // Determine replacement based on context
+    if (classes.includes('logo') || altText.toLowerCase().includes('logo')) {
+      // Replace logos with styled text
+      return `<div class="logo-placeholder" style="display: inline-flex; align-items: center; font-weight: bold; color: #2c3e50; padding: 10px; border: 2px solid #3498db; border-radius: 5px; background: linear-gradient(45deg, #f8f9fa, #e9ecef);">${altText}</div>`;
+    } else if (classes.includes('icon') || altText.toLowerCase().includes('icon')) {
+      // Replace icons with CSS symbols
+      return `<div class="icon-placeholder" style="display: inline-block; width: 24px; height: 24px; background: #3498db; border-radius: 50%; text-align: center; line-height: 24px; color: white; font-size: 12px;">●</div>`;
+    } else {
+      // Replace other images with colored placeholders
+      return `<div class="image-placeholder" style="display: block; width: 100%; max-width: 300px; height: 150px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 500;">${altText}</div>`;
+    }
+  });
+  
+  // Remove any background-image references in CSS (they would be broken)
+  html = html.replace(/background-image\s*:\s*url\([^)]*\)\s*;?/gi, '');
+  
+  // Remove any references to image files in CSS
+  html = html.replace(/url\(['"]?[^'"]*\.(jpg|jpeg|png|gif|svg|webp)['"]?\)/gi, '');
+  
+  console.log(`Removed ${removedCount} image references and replaced with styled elements`);
+  
+  return html;
+}
+
 // Function to add Clickthrough integration to generated HTML
 function addClickthroughToHTML(html, clickthroughId, clusterId) {
   try {
     console.log('Adding Clickthrough integration...', { clickthroughId, clusterId });
-    // 1. Add SDK script to <head>
+    
+    // STEP 1: Remove existing terms/conditions elements to avoid duplicates
+    html = removeExistingTermsElements(html);
+    
+    // STEP 2: Add SDK script to <head>
     const sdkScript = `<script type="module" src="https://sdk.spotdraft.com/clickwrap/v1/sdk.js"></script>`;
     html = html.replace('</head>', `  ${sdkScript}\n</head>`);
     
-    // 2. Find CTA button patterns and add Clickthrough div above them
+    // STEP 3: Find CTA button patterns and add Clickthrough div above them
     const ctaPatterns = [
       /(<button[^>]*type\s*=\s*["']submit["'][^>]*>)/gi,
       /(<button[^>]*class\s*=\s*["'][^"']*(?:submit|cta|signup|register|join|trial)[^"']*["'][^>]*>)/gi,
@@ -177,6 +268,33 @@ app.post('/api/generate-page', upload.single('screenshot'), async (req, res) => 
 
     // Generate HTML/CSS/JS using Gemini - CLEAN GENERATION WITHOUT CLICKTHROUGH
     
+    // Universal instructions that always apply
+    const imageHandlingInstructions = `
+    
+    CRITICAL IMAGE HANDLING INSTRUCTIONS (ALWAYS APPLY):
+    - DO NOT include any <img> tags or image references from the screenshot
+    - DO NOT attempt to replicate logos, photos, graphics, or any visual images
+    - REPLACE image areas with appropriate styled elements:
+      * For logos: Use styled text/typography or CSS-based geometric shapes
+      * For decorative images: Use CSS backgrounds, gradients, or colored divs
+      * For photos: Use placeholder colored backgrounds or CSS patterns
+      * For icons: Use CSS symbols, Unicode characters, or styled elements
+    - Focus on creating a clean, functional page without broken image links
+    - Use colors, typography, and CSS styling to maintain visual hierarchy instead of images
+    `;
+    
+    let clickthroughInstructions = '';
+    if (clickthroughId && clusterId) {
+      clickthroughInstructions = `
+    
+    SPECIAL INSTRUCTION FOR CLICKTHROUGH INTEGRATION:
+    - If the screenshot contains checkboxes, "I agree to terms", "Terms and Conditions", or privacy policy acceptance elements, DO NOT replicate them
+    - Skip any terms/conditions/privacy policy checkboxes or acceptance UI elements
+    - Focus on replicating the form fields and layout, but omit terms acceptance elements
+    - The terms acceptance will be handled by a separate integration system
+      `;
+    }
+    
     const prompt = `
     Analyze this screenshot of a webpage and generate complete HTML, CSS, and JavaScript code to replicate it as closely as possible.
     
@@ -206,6 +324,8 @@ app.post('/api/generate-page', upload.single('screenshot'), async (req, res) => 
     - Implement proper semantic HTML structure
     - Add inline CSS and JavaScript in single HTML file
     - Ensure full functionality with form validation and interactions
+    ${imageHandlingInstructions}
+    ${clickthroughInstructions}
     
     Focus on maintaining the exact visual appearance and formatting integrity of the original design.
     
@@ -240,6 +360,9 @@ app.post('/api/generate-page', upload.single('screenshot'), async (req, res) => 
       .replace(/```html/gi, '')     // Remove any remaining ```html
       .replace(/```/g, '')          // Remove any remaining ```
       .trim();
+    
+    // POST-PROCESS: Clean up any image references (always apply)
+    generatedHTML = removeImageReferences(generatedHTML);
     
     // POST-PROCESS: Add Clickthrough integration if parameters provided
     if (clickthroughId && clusterId) {

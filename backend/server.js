@@ -31,6 +31,125 @@ const genAI = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY
 });
 
+// Function to add Clickthrough integration to generated HTML
+function addClickthroughToHTML(html, clickthroughId, clusterId) {
+  try {
+    console.log('Adding Clickthrough integration...', { clickthroughId, clusterId });
+    // 1. Add SDK script to <head>
+    const sdkScript = `<script type="module" src="https://sdk.spotdraft.com/clickwrap/v1/sdk.js"></script>`;
+    html = html.replace('</head>', `  ${sdkScript}\n</head>`);
+    
+    // 2. Find CTA button patterns and add Clickthrough div above them
+    const ctaPatterns = [
+      /(<button[^>]*type\s*=\s*["']submit["'][^>]*>)/gi,
+      /(<button[^>]*class\s*=\s*["'][^"']*(?:submit|cta|signup|register|join|trial)[^"']*["'][^>]*>)/gi,
+      /(<input[^>]*type\s*=\s*["']submit["'][^>]*\/?>)/gi,
+      /(<button[^>]*>[^<]*(?:submit|sign.up|register|join|continue|get.started|start.*trial|free.trial)[^<]*<\/button>)/gi,
+      /(<button[^>]*class\s*=\s*["']submit-button["'][^>]*>.*?<\/button>)/gi
+    ];
+    
+    let clickthroughAdded = false;
+    
+    for (const pattern of ctaPatterns) {
+      if (html.match(pattern) && !clickthroughAdded) {
+        console.log('Found CTA pattern match, adding Clickthrough div');
+        html = html.replace(pattern, (match) => {
+          clickthroughAdded = true;
+          return `    <!-- SpotDraft Clickthrough Integration -->
+    <div id="clickthrough-host" style="margin: 15px 0; padding: 10px 0;"></div>
+    
+    ${match}`;
+        });
+        break;
+      }
+    }
+    
+    console.log('Clickthrough added:', clickthroughAdded);
+    
+    // Fallback: If no CTA found, add before the last closing form tag or div
+    if (!clickthroughAdded) {
+      const fallbackPatterns = [
+        /(.*<\/form>)/gi,
+        /(.*<\/div>\s*<\/body>)/gi
+      ];
+      
+      for (const pattern of fallbackPatterns) {
+        if (html.match(pattern)) {
+          html = html.replace(pattern, (match) => {
+            return match.replace(/(<\/(?:form|div)>)/, `    <!-- SpotDraft Clickthrough Integration -->
+    <div id="clickthrough-host" style="margin: 15px 0; padding: 10px 0;"></div>
+    
+    $1`);
+          });
+          clickthroughAdded = true;
+          break;
+        }
+      }
+    }
+    
+    // 3. Add Clickthrough JavaScript before </body> - EXACT implementation per documentation
+    const clickthroughJS = `
+  <script>
+  window.addEventListener("sdClickthroughLoaded", function () {
+      const clickthrough = new SdClickthrough({
+          clickwrapId: "${clickthroughId}",
+          hostLocationDomId: "clickthrough-host",
+          baseUrl: "https://${clusterId}/"
+      });
+      clickthrough.init();
+      
+      // Handle form submission with Clickthrough
+      const submitBtn = document.querySelector('[type="submit"], button[type="submit"]') ||
+                       document.querySelector('button');
+      const form = document.querySelector('form') || submitBtn?.closest('form');
+      
+      if (submitBtn) {
+          submitBtn.addEventListener('click', function(e) {
+              e.preventDefault();
+              
+              // Extract user data for payload
+              const userEmail = document.querySelector('[type="email"]')?.value || 
+                              document.querySelector('[name*="email" i]')?.value || 
+                              document.querySelector('[placeholder*="email" i]')?.value || 'user@example.com';
+              
+              const firstName = document.querySelector('[name*="first" i], [placeholder*="first" i]')?.value || '';
+              const lastName = document.querySelector('[name*="last" i], [placeholder*="last" i]')?.value || '';
+              
+              // Create payload as per documentation
+              const payload = {
+                  user_identifier: userEmail,
+                  first_name: firstName,
+                  last_name: lastName,
+                  user_email: userEmail
+              };
+              
+              // Submit Clickthrough contract
+              clickthrough.submit(payload).then(contractData => {
+                  console.log('Clickthrough contract created:', contractData);
+                  alert('Terms accepted! Form submitted successfully.');
+                  
+                  // Continue with original form submission
+                  if (form) {
+                      form.submit();
+                  }
+              }).catch(error => {
+                  console.error('Clickthrough error:', error);
+                  alert('Please accept the terms and conditions to continue.');
+              });
+          });
+      }
+  });
+  </script>`;
+    
+    html = html.replace('</body>', `${clickthroughJS}\n</body>`);
+    
+    return html;
+  } catch (error) {
+    console.error('Error adding Clickthrough to HTML:', error);
+    return html; // Return original HTML if processing fails
+  }
+}
+
 // Endpoint to upload screenshot and generate webpage
 app.post('/api/generate-page', upload.single('screenshot'), async (req, res) => {
   try {
@@ -41,11 +160,22 @@ app.post('/api/generate-page', upload.single('screenshot'), async (req, res) => 
     const pageId = uuidv4();
     const screenshotBuffer = req.file.buffer;
     
+    // Get Clickthrough parameters from form data
+    const clickthroughId = req.body.clickthroughId;
+    const clusterId = req.body.clusterId;
+    
+    console.log('Received parameters:', {
+      clickthroughId,
+      clusterId,
+      hasFile: !!req.file,
+      bodyKeys: Object.keys(req.body)
+    });
+    
     // Convert image to base64 for Gemini
     const base64Image = screenshotBuffer.toString('base64');
     const mimeType = req.file.mimetype;
 
-    // Generate HTML/CSS/JS using Gemini
+    // Generate HTML/CSS/JS using Gemini - CLEAN GENERATION WITHOUT CLICKTHROUGH
     
     const prompt = `
     Analyze this screenshot of a webpage and generate complete HTML, CSS, and JavaScript code to replicate it as closely as possible.
@@ -79,7 +209,7 @@ app.post('/api/generate-page', upload.single('screenshot'), async (req, res) => 
     
     Focus on maintaining the exact visual appearance and formatting integrity of the original design.
     
-    IMPORTANT: Return ONLY the complete HTML code with embedded CSS and JavaScript. Do not use markdown code blocks (```html), backticks, or any formatting - just return the raw HTML code directly.
+    IMPORTANT: Return ONLY the complete HTML code with embedded CSS and JavaScript. Do not use markdown code blocks, backticks, or any formatting - just return the raw HTML code directly.
     `;
 
     const response = await genAI.models.generateContent({
@@ -107,7 +237,14 @@ app.post('/api/generate-page', upload.single('screenshot'), async (req, res) => 
       .replace(/^```html\s*/i, '')  // Remove opening ```html
       .replace(/^```\s*/gm, '')     // Remove any other opening ```
       .replace(/\s*```$/gm, '')     // Remove closing ```
+      .replace(/```html/gi, '')     // Remove any remaining ```html
+      .replace(/```/g, '')          // Remove any remaining ```
       .trim();
+    
+    // POST-PROCESS: Add Clickthrough integration if parameters provided
+    if (clickthroughId && clusterId) {
+      generatedHTML = addClickthroughToHTML(generatedHTML, clickthroughId, clusterId);
+    }
     
     // Create directory for this page
     const pageDir = path.join(process.cwd(), '..', 'generated-pages', pageId);
@@ -290,6 +427,25 @@ app.get('/api/pages', async (req, res) => {
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'webpage-replicator-backend' });
+});
+
+// Test Clickthrough integration endpoint
+app.post('/api/test-clickthrough', (req, res) => {
+  const testHTML = `<!DOCTYPE html>
+<html><head><title>Test</title></head>
+<body>
+<form><input type="email" placeholder="Email">
+<button type="submit" class="submit-button">Start my free trial</button>
+</form></body></html>`;
+
+  const result = addClickthroughToHTML(testHTML, 'test-clickthrough-id', 'api.in.spotdraft.com');
+  
+  res.json({
+    success: true,
+    original: testHTML,
+    withClickthrough: result,
+    hasClickthrough: result.includes('clickthrough-host')
+  });
 });
 
 app.listen(PORT, () => {

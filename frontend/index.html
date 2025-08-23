@@ -317,6 +317,30 @@
                     <input type="file" id="fileInput" class="file-input" accept="image/*">
                 </div>
                 <div class="error-message" id="uploadError"></div>
+                
+                <!-- Clickthrough Configuration -->
+                <div class="clickthrough-config" style="margin-top: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background: #f9f9f9;">
+                    <h3 style="margin-bottom: 15px; color: #333; font-size: 1.2rem;">SpotDraft Clickthrough Integration</h3>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label for="clickthroughId" style="display: block; margin-bottom: 5px; font-weight: 500; color: #555;">Clickthrough ID:</label>
+                            <input type="text" id="clickthroughId" placeholder="Enter Clickthrough ID" style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <label for="clusterId" style="display: block; margin-bottom: 5px; font-weight: 500; color: #555;">Cluster:</label>
+                            <select id="clusterId" style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                                <option value="">Select Cluster</option>
+                                <option value="api.in.spotdraft.com">India (IN)</option>
+                                <option value="api.us.spotdraft.com">United States (US)</option>
+                                <option value="api.eu.spotdraft.com">Europe (EU)</option>
+                                <option value="api.me.spotdraft.com">Middle East (ME)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 12px; color: #666;">
+                        ⚠️ When provided, Clickthrough will be automatically embedded above CTA buttons for terms acceptance
+                    </p>
+                </div>
             </div>
 
             <div class="preview-section">
@@ -427,12 +451,35 @@
                 return;
             }
 
+            // Validate Clickthrough inputs
+            const clickthroughId = document.getElementById('clickthroughId').value.trim();
+            const clusterId = document.getElementById('clusterId').value.trim();
+            
+            if ((clickthroughId && !clusterId) || (!clickthroughId && clusterId)) {
+                showError('Both Clickthrough ID and Cluster must be provided together.');
+                return;
+            }
+
             showLoading(true);
             hideError();
 
             try {
                 const formData = new FormData();
                 formData.append('screenshot', window.selectedFile);
+                
+                // Add Clickthrough parameters if both provided
+                console.log('Clickthrough params:', { clickthroughId, clusterId });
+                if (clickthroughId && clusterId) {
+                    console.log('Adding Clickthrough params to FormData');
+                    formData.append('clickthroughId', clickthroughId);
+                    formData.append('clusterId', clusterId);
+                }
+                
+                // Debug FormData contents
+                console.log('FormData contents:');
+                for (let [key, value] of formData.entries()) {
+                    console.log(key, ':', value);
+                }
 
                 const response = await fetch(`${API_BASE}/generate-page`, {
                     method: 'POST',
@@ -481,6 +528,26 @@
 
         function showResults(result) {
             const resultsContent = document.getElementById('resultsContent');
+            const clickthroughId = document.getElementById('clickthroughId').value.trim();
+            const clusterId = document.getElementById('clusterId').value.trim();
+            
+            let clickthroughStatus = '';
+            if (clickthroughId && clusterId) {
+                const clusterName = {
+                    'api.in.spotdraft.com': 'India (IN)',
+                    'api.us.spotdraft.com': 'United States (US)', 
+                    'api.eu.spotdraft.com': 'Europe (EU)',
+                    'api.me.spotdraft.com': 'Middle East (ME)'
+                }[clusterId] || clusterId;
+                
+                clickthroughStatus = `
+                    <div class="result-item" style="background: #e8f5e8; border-left: 4px solid #28a745;">
+                        <strong>✅ SpotDraft Clickthrough:</strong> Integrated<br>
+                        <small>Clickthrough ID: ${clickthroughId} | Cluster: ${clusterName}</small>
+                    </div>
+                `;
+            }
+            
             resultsContent.innerHTML = `
                 <div class="result-item">
                     <strong>Page ID:</strong> ${result.pageId}
@@ -493,6 +560,7 @@
                     <strong>Direct Access URL:</strong> 
                     <a href="${result.url}" target="_blank" class="result-link">${result.url}</a>
                 </div>
+                ${clickthroughStatus}
             `;
             resultsSection.style.display = 'block';
         }

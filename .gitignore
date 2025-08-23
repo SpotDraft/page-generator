@@ -11,23 +11,8 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-# Runtime data
-uploads/
-demos/
-
-# Logs
-logs
-*.log
-
-# Build outputs
-/frontend/build
-/frontend/dist
-
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
+# Generated pages
+generated-pages/*
 
 # OS generated files
 .DS_Store
@@ -38,6 +23,29 @@ logs
 ehthumbs.db
 Thumbs.db
 
-# Temporary files
-*.tmp
-*.temp
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Build outputs
+dist/
+build/

@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webpage Replicator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .upload-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .upload-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background-color: #f8f9ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background-color: #f0f4ff;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #ddd;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .browse-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .browse-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .preview-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .preview-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .preview-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            width: 100%;
+            display: none;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+        }
+
+        .results-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .result-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .result-item strong {
+            color: #667eea;
+        }
+
+        .result-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .result-link:hover {
+            text-decoration: underline;
+        }
+
+        .comparison-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-top: 20px;
+            display: none;
+        }
+
+        .comparison-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .score-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .score-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .score-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .score-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .feedback-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .feedback-section h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .feedback-text {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .upload-area {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📸 Webpage Replicator</h1>
+            <p>Upload a screenshot and get a pixel-perfect HTML replica</p>
+        </div>
+
+        <div class="main-content">
+            <div class="upload-section">
+                <h2>Upload Screenshot</h2>
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📎</div>
+                    <div class="upload-text">
+                        Click to browse or drag and drop your screenshot here
+                    </div>
+                    <button type="button" class="browse-btn">Browse Files</button>
+                    <input type="file" id="fileInput" class="file-input" accept="image/*">
+                </div>
+                <div class="error-message" id="uploadError"></div>
+            </div>
+
+            <div class="preview-section">
+                <h2>Preview</h2>
+                <img id="previewImage" class="preview-image" alt="Screenshot preview">
+                <button type="button" id="generateBtn" class="generate-btn">
+                    🚀 Generate Webpage
+                </button>
+                <div class="loading" id="loadingIndicator">
+                    <div class="spinner"></div>
+                    <p>Analyzing screenshot and generating code...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <h2>Generated Page</h2>
+            <div id="resultsContent"></div>
+        </div>
+
+        <div class="comparison-section" id="comparisonSection">
+            <h2>Similarity Analysis</h2>
+            <div class="score-grid" id="scoreGrid"></div>
+            <div class="feedback-section">
+                <h3>Detailed Feedback</h3>
+                <div id="feedbackText" class="feedback-text"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3003/api';
+        let currentPageId = null;
+
+        // DOM elements
+        const fileInput = document.getElementById('fileInput');
+        const previewImage = document.getElementById('previewImage');
+        const generateBtn = document.getElementById('generateBtn');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const resultsSection = document.getElementById('resultsSection');
+        const comparisonSection = document.getElementById('comparisonSection');
+        const uploadError = document.getElementById('uploadError');
+        const uploadArea = document.querySelector('.upload-area');
+
+        // File upload handling
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        // Generate button
+        generateBtn.addEventListener('click', generateWebpage);
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showError('Please select a valid image file.');
+                return;
+            }
+
+            // Validate file size (10MB limit)
+            if (file.size > 10 * 1024 * 1024) {
+                showError('File size must be less than 10MB.');
+                return;
+            }
+
+            hideError();
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewImage.style.display = 'block';
+                generateBtn.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+
+            // Store file for later use
+            window.selectedFile = file;
+        }
+
+        async function generateWebpage() {
+            if (!window.selectedFile) {
+                showError('Please select a screenshot first.');
+                return;
+            }
+
+            showLoading(true);
+            hideError();
+
+            try {
+                const formData = new FormData();
+                formData.append('screenshot', window.selectedFile);
+
+                const response = await fetch(`${API_BASE}/generate-page`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentPageId = result.pageId;
+                    showResults(result);
+                    
+                    // Auto-compare after generation
+                    setTimeout(() => {
+                        compareWithOriginal();
+                    }, 2000);
+                } else {
+                    throw new Error(result.error || 'Failed to generate page');
+                }
+            } catch (error) {
+                showError(`Generation failed: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function compareWithOriginal() {
+            if (!currentPageId) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/compare-page/${currentPageId}`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showComparison(result.comparison);
+                } else {
+                    console.error('Comparison failed:', result.error);
+                }
+            } catch (error) {
+                console.error('Comparison error:', error);
+            }
+        }
+
+        function showResults(result) {
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = `
+                <div class="result-item">
+                    <strong>Page ID:</strong> ${result.pageId}
+                </div>
+                <div class="result-item">
+                    <strong>Generated Page URL:</strong> 
+                    <a href="${result.previewUrl}" target="_blank" class="result-link">${result.previewUrl}</a>
+                </div>
+                <div class="result-item">
+                    <strong>Direct Access URL:</strong> 
+                    <a href="${result.url}" target="_blank" class="result-link">${result.url}</a>
+                </div>
+            `;
+            resultsSection.style.display = 'block';
+        }
+
+        function showComparison(comparison) {
+            const scoreGrid = document.getElementById('scoreGrid');
+            const feedbackText = document.getElementById('feedbackText');
+
+            scoreGrid.innerHTML = `
+                <div class="score-item">
+                    <div class="score-value">${comparison.similarity_score}/10</div>
+                    <div class="score-label">Overall Similarity</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-value">${comparison.layout_score}/10</div>
+                    <div class="score-label">Layout Accuracy</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-value">${comparison.color_score}/10</div>
+                    <div class="score-label">Color Matching</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-value">${comparison.typography_score}/10</div>
+                    <div class="score-label">Typography</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-value">${comparison.positioning_score}/10</div>
+                    <div class="score-label">Element Positioning</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-value">${comparison.formatting_score || 'N/A'}/10</div>
+                    <div class="score-label">Page Formatting</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-value">${comparison.font_accuracy_score || 'N/A'}/10</div>
+                    <div class="score-label">Font Accuracy</div>
+                </div>
+            `;
+
+            feedbackText.innerHTML = `
+                <p><strong>Analysis:</strong> ${comparison.feedback}</p>
+                ${comparison.font_issues && comparison.font_issues.length > 0 ? `
+                    <p><strong>Font & Typography Issues:</strong></p>
+                    <ul>
+                        ${comparison.font_issues.map(issue => `<li>${issue}</li>`).join('')}
+                    </ul>
+                ` : ''}
+                ${comparison.formatting_issues && comparison.formatting_issues.length > 0 ? `
+                    <p><strong>Page Formatting Issues:</strong></p>
+                    <ul>
+                        ${comparison.formatting_issues.map(issue => `<li>${issue}</li>`).join('')}
+                    </ul>
+                ` : ''}
+                ${comparison.improvements ? `
+                    <p><strong>Suggested Improvements:</strong></p>
+                    <ul>
+                        ${comparison.improvements.map(imp => `<li>${imp}</li>`).join('')}
+                    </ul>
+                ` : ''}
+            `;
+
+            comparisonSection.style.display = 'block';
+        }
+
+        function showLoading(show) {
+            loadingIndicator.style.display = show ? 'block' : 'none';
+            generateBtn.disabled = show;
+        }
+
+        function showError(message) {
+            uploadError.textContent = message;
+            uploadError.style.display = 'block';
+        }
+
+        function hideError() {
+            uploadError.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

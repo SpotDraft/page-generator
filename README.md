@@ -1,234 +1,217 @@
-# SpotDraft Clickthrough Demo Tool
+# 📸 Webpage Replicator
 
-🚀 **Revolutionary AI-powered demo page generator** that converts screenshots into pixel-perfect, live demo pages with embedded SpotDraft Clickthrough contracts.
+An AI-powered tool that analyzes screenshots of webpages and generates pixel-perfect HTML, CSS, and JavaScript replicas using Google's Gemini API.
 
-![SpotDraft Demo Tool](https://img.shields.io/badge/Status-Production%20Ready-green)
-![Node.js](https://img.shields.io/badge/Node.js-v18+-blue)
-![React](https://img.shields.io/badge/React-18.2.0-blue)
-![Gemini AI](https://img.shields.io/badge/AI-Google%20Gemini-orange)
+## 🌟 Features
 
-## ✨ Key Features
-
-### 🎨 **World-Class Design System Extraction**
-- **Two-stage AI process**: First extracts design DNA, then generates pixel-perfect HTML
-- **Surgical precision**: Analyzes colors, typography, spacing, and component styles
-- **Brand consistency**: Maintains authentic design language across recreated pages
-
-### 📱 **Multi-Image Context Understanding**
-- **Main screenshot**: The exact page to recreate
-- **Context pages**: Additional brand pages for design system understanding
-- **Smart analysis**: AI learns from multiple pages to capture complete brand aesthetic
-
-### 🔗 **Seamless Clickthrough Integration**
-- **Natural placement**: Integrates above/near CTA buttons like real consent flows
-- **Brand-matched styling**: Uses extracted design tokens for authentic appearance
-- **Multiple clusters**: Support for IN, US, EU, ME regions
-
-### ⚡ **Production-Ready Features**
-- **Instant generation**: Live demo URLs in seconds
-- **Live preview**: Embedded iframe for immediate testing
-- **Responsive design**: Mobile-optimized generated pages
-- **Error handling**: Robust retry logic for API stability
-
-## 🏗️ Architecture
-
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   React.js      │────│   Express.js     │────│   Gemini AI     │
-│   Frontend      │    │   Backend        │    │   Service       │
-│                 │    │                  │    │                 │
-│ • Image Upload  │    │ • Multi-image    │    │ • Design DNA    │
-│ • Preview       │    │   handling       │    │   extraction    │
-│ • Demo URLs     │    │ • Demo hosting   │    │ • HTML gen      │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-```
+- **Screenshot Analysis**: Upload any webpage screenshot for AI analysis
+- **Code Generation**: Automatically generates HTML, CSS, and JavaScript
+- **Visual Comparison**: AI-powered similarity scoring between original and generated pages
+- **Unique URLs**: Each generated page gets a unique URL for easy sharing
+- **Form Focused**: Optimized for replicating signup forms, contact forms, and similar interfaces
+- **Responsive Design**: Generated pages include responsive CSS for mobile compatibility
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js v18+
-- Google Gemini API key ([Get one here](https://makersuite.google.com/app/apikey))
 
-### 1. Clone the Repository
+- Node.js 18+ installed
+- Google Gemini API key
+
+### 1. Clone and Setup
+
 ```bash
-git clone https://github.com/yourusername/spotdraft-clickthrough-demo-tool.git
-cd spotdraft-clickthrough-demo-tool
+git clone <your-repo-url>
+cd Signup-page-gen
 ```
 
 ### 2. Backend Setup
+
 ```bash
 cd backend
 npm install
-
-# Setup environment variables
 cp .env.example .env
-# Edit .env and add your Gemini API key
+```
+
+Edit the `.env` file and add your Gemini API key:
+```
+GEMINI_API_KEY=your_actual_api_key_here
 ```
 
 ### 3. Frontend Setup
+
 ```bash
 cd ../frontend
 npm install
-
-# Setup environment variables (optional)
-cp .env.example .env
 ```
 
-### 4. Run the Application
+### 4. Start the Application
+
+**Terminal 1 - Backend:**
 ```bash
-# Terminal 1 - Backend
-cd backend && npm run dev
-
-# Terminal 2 - Frontend
-cd frontend && npm start
+cd backend
+npm run dev
 ```
 
-### 5. Open Your Browser
-Navigate to `http://localhost:3000` and start creating demos!
+**Terminal 2 - Frontend:**
+```bash
+cd frontend
+npm start
+```
+
+### 5. Access the Application
+
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001
+- Generated pages: http://localhost:3001/{page-id}
 
 ## 📖 How to Use
 
-### Step 1: Upload Images
-1. **Main Screenshot**: Upload the exact page you want to recreate
-2. **Context Pages** (Optional): Upload homepage, about page, or other brand pages
+1. **Upload Screenshot**: Click the upload area or drag & drop a webpage screenshot
+2. **Generate Page**: Click "Generate Webpage" to create the HTML replica
+3. **View Results**: Access your generated page via the provided URL
+4. **Compare Quality**: Review the AI's similarity analysis and improvement suggestions
 
-### Step 2: Configure Clickthrough
-1. **Clickwrap ID**: Enter your SpotDraft Clickwrap ID
-2. **Cluster**: Select your region (IN, US, EU, ME)
+## 🛠 API Endpoints
 
-### Step 3: Generate Demo
-1. Click **"Generate Demo"**
-2. AI extracts design system and creates pixel-perfect HTML
-3. Get instant live demo URL
+### `POST /api/generate-page`
+Upload a screenshot and generate a webpage replica.
 
-### Step 4: Share & Test
-1. **Copy URL** to share with stakeholders
-2. **Live Preview** to test functionality immediately
-3. **Download HTML** for further customization
+**Request:**
+- `screenshot` (file): Image file (PNG, JPG, etc.)
 
-## 🎨 AI-Powered Design Process
-
-### Stage 1: Design DNA Extraction
-```javascript
-🔍 Analyzing uploaded images...
-📊 Extracting color palette (#3B82F6, #64748B...)
-🔤 Identifying typography (Inter, 16px, 600 weight...)
-📏 Measuring spacing patterns (8px, 16px, 32px...)
-🎯 Capturing component styles (8px radius, shadows...)
+**Response:**
+```json
+{
+  "success": true,
+  "pageId": "uuid-string",
+  "url": "http://localhost:3001/uuid-string",
+  "previewUrl": "http://localhost:3001/uuid-string/index.html"
+}
 ```
 
-### Stage 2: Precision HTML Generation
-```javascript
-🎨 Applying extracted design system...
-💻 Generating pixel-perfect HTML...
-🔗 Integrating Clickthrough naturally...
-✅ Creating live demo URL...
+### `POST /api/compare-page/:pageId`
+Compare the generated page with the original screenshot.
+
+**Response:**
+```json
+{
+  "success": true,
+  "pageId": "uuid-string",
+  "comparison": {
+    "similarity_score": 8,
+    "layout_score": 9,
+    "color_score": 7,
+    "typography_score": 8,
+    "positioning_score": 9,
+    "feedback": "Detailed analysis...",
+    "improvements": ["suggestion1", "suggestion2"]
+  }
+}
 ```
 
-## 🛠️ Environment Variables
+### `GET /api/pages`
+List all generated pages.
 
-### Backend `.env`
-```bash
-GEMINI_API_KEY=your_gemini_api_key_here
-PORT=5000
-BASE_URL=http://localhost:5000
+### `GET /api/health`
+Health check endpoint.
+
+## 🏗 Project Structure
+
+```
+Signup-page-gen/
+├── backend/                 # Express.js API server
+│   ├── server.js           # Main server file
+│   ├── package.json        # Backend dependencies
+│   └── .env.example        # Environment variables template
+├── frontend/               # Static web interface
+│   ├── index.html          # Main frontend application
+│   └── package.json        # Frontend dependencies
+├── generated-pages/        # Stores generated HTML files
+└── README.md              # Project documentation
 ```
 
-### Frontend `.env`
-```bash
-REACT_APP_API_URL=http://localhost:5000
-```
+## 🎨 Use Cases
 
-## 📦 Tech Stack
+This tool is particularly effective for:
 
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **Frontend** | React.js + Tailwind CSS | Modern, responsive UI |
-| **Backend** | Node.js + Express | API server & file handling |
-| **AI Engine** | Google Gemini 1.5 Flash | Design analysis & HTML generation |
-| **File Upload** | Multer | Multi-image processing |
-| **Demo Hosting** | Static file serving | Live demo URLs |
+- **Signup Forms**: User registration pages
+- **Contact Forms**: Customer inquiry forms
+- **Onboarding Forms**: Multi-step user onboarding
+- **Survey Forms**: Data collection interfaces
+- **Login Pages**: Authentication interfaces
+- **Landing Pages**: Simple promotional pages
 
-## 🌍 Deployment Options
+## 🔧 Configuration
 
-### Option 1: Vercel (Recommended)
-```bash
-# Deploy backend
-cd backend && vercel --prod
+### Environment Variables
 
-# Deploy frontend
-cd frontend && vercel --prod
-```
+- `GEMINI_API_KEY`: Your Google Gemini API key (required)
+- `PORT`: Backend server port (default: 3001)
+- `GEMINI_MODEL`: AI model to use (default: gemini-2.0-flash-exp)
 
-### Option 2: Railway
-1. Connect GitHub repository
-2. Add environment variables in dashboard
-3. Auto-deploys on push
+### Supported Image Formats
 
-### Option 3: Render
-```yaml
-# render.yaml
-services:
-  - type: web
-    name: spotdraft-demo-api
-    env: node
-    buildCommand: npm install
-    startCommand: node server.js
-```
+- PNG
+- JPG/JPEG
+- WebP
+- GIF (static)
 
-## 🔧 Development
+### File Size Limits
 
-### Project Structure
-```
-spotdraft-clickthrough-demo-tool/
-├── frontend/              # React application
-│   ├── src/
-│   │   ├── App.js        # Main component
-│   │   ├── index.js      # Entry point
-│   │   └── index.css     # Tailwind styles
-│   └── public/
-├── backend/              # Express server
-│   ├── server.js         # Main server
-│   ├── geminiService.js  # AI service
-│   └── demos/            # Generated demos
-├── README.md
-└── .gitignore
-```
+- Maximum upload size: 10MB
+- Recommended: Under 5MB for best performance
 
-### Available Scripts
+## 🚨 Limitations
 
-**Backend:**
-- `npm start` - Production server
-- `npm run dev` - Development server with nodemon
+- Requires active internet connection for AI processing
+- Complex interactive elements may need manual refinement
+- Dynamic content (data from APIs) cannot be replicated
+- Performance depends on Gemini API availability
 
-**Frontend:**
-- `npm start` - Development server
-- `npm run build` - Production build
+## 🔒 Security Notes
+
+- API keys are stored in environment variables
+- File uploads are validated for type and size
+- Generated content is served from isolated directories
+- No user data is permanently stored
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🆘 Support
+## 🆘 Troubleshooting
 
-- 📧 **Email**: [your-email@domain.com]
-- 💬 **Issues**: [GitHub Issues](https://github.com/yourusername/spotdraft-clickthrough-demo-tool/issues)
-- 📖 **Documentation**: [Wiki](https://github.com/yourusername/spotdraft-clickthrough-demo-tool/wiki)
+### Common Issues
 
-## 🙏 Acknowledgments
+**"Failed to generate page"**
+- Check your Gemini API key is valid
+- Ensure the image is under 10MB
+- Try a different image format
 
-- [Google Gemini AI](https://ai.google.dev/) for revolutionary vision capabilities
-- [SpotDraft](https://spotdraft.com/) for the Clickthrough SDK
-- [React](https://reactjs.org/) and [Tailwind CSS](https://tailwindcss.com/) for the amazing frontend tools
+**"Cannot connect to backend"**
+- Verify backend is running on port 3001
+- Check for CORS issues in browser console
+
+**"Poor similarity score"**
+- Try uploading a clearer screenshot
+- Ensure the original page has good contrast
+- Consider simpler layouts for better results
+
+### Getting Help
+
+- Check the browser console for errors
+- Review backend logs for API issues
+- Ensure all dependencies are installed correctly
 
 ---
 
-**Built with ❤️ for the SpotDraft community**
+Built with ❤️ using Google Gemini AI

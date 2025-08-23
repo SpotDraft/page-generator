@@ -1,31 +1,14 @@
 {
-  "name": "spotdraft-demo-frontend",
+  "name": "webpage-replicator-frontend",
   "version": "1.0.0",
-  "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "axios": "^1.6.5",
-    "react-scripts": "5.0.1"
-  },
+  "description": "Frontend interface for webpage replication tool",
+  "main": "index.js",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build"
+    "start": "serve -s . -p 3000",
+    "dev": "serve -s . -p 3000"
   },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "dependencies": {
+    "serve": "^14.2.3"
   },
-  "devDependencies": {
-    "tailwindcss": "^3.3.0",
-    "autoprefixer": "^10.4.16",
-    "postcss": "^8.4.32"
-  }
+  "devDependencies": {}
 }
